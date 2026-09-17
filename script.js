@@ -67,8 +67,6 @@
   const diffTabs = Array.from(document.querySelectorAll('.diff-tab'));
   const practiceCheck = document.getElementById('practiceCheck');
   const tbList = document.getElementById('tbList');
-  const skinSection = document.getElementById('skinSection');
-  const skinGoldenCheck = document.getElementById('skinGoldenCheck');
 
   let currentLbTab = 'campus';
   let lbCache = null;
@@ -77,14 +75,12 @@
   let selectedDifficulty = 'medium';
   let practiceMode = false;
   let adminDemoMode = false;
-  let useGoldenSkin = false;
   let currentLang = 'en';
 
   const KEYS = ['ArrowLeft','ArrowUp','ArrowRight','ArrowDown'];
   const LANE_ARROWS = ['←','↑','→','↓'];
   const VICTORY_TIME = 120000;
   const MILESTONES = [1000,3000,6000,10000,15000,20000,30000];
-  const GOLDEN_SKIN_UNLOCK_SCORE = 5000;
   const ADMIN_CODE = 'GANESH2026';
 
   const DIFFICULTY_PRESETS = {
@@ -118,7 +114,6 @@
       topBannerTitle:"🏆 Today's Top 3",
       difficultyLabel:"Difficulty",
       practiceLabel:"Practice Mode (no game over, score not saved)",
-      skinLabel:"✨ Use Golden Mushak skin (unlocked!)",
       labelNiat:"NIAT ID", labelName:"Player Name", labelCampus:"Campus Name",
       formError:"Please fill in all three fields to begin.",
       startBtn:"Enter the Mandap",
@@ -154,7 +149,6 @@
       loseTitle:"The Beat Fades…",
       loseMsg:"The devotion energy waned, but the mandap remains bright! Try again.",
       achievementUnlocked:(name)=>`🏅 Achievement unlocked: ${name}`,
-      skinUnlocked:"✨ Golden Mushak skin unlocked!",
       scoreCopied:"Score copied to clipboard!",
       couldNotCopy:"Could not copy — try manually.",
       shareUnsupported:"Sharing not supported on this browser.",
@@ -167,7 +161,6 @@
       topBannerTitle:"🏆 आज के टॉप 3",
       difficultyLabel:"कठिनाई",
       practiceLabel:"अभ्यास मोड (गेम ओवर नहीं होगा, स्कोर सेव नहीं होगा)",
-      skinLabel:"✨ गोल्डन मूषक स्किन इस्तेमाल करें (अनलॉक!)",
       labelNiat:"NIAT आईडी", labelName:"खिलाड़ी का नाम", labelCampus:"कैंपस का नाम",
       formError:"शुरू करने के लिए कृपया तीनों फ़ील्ड भरें।",
       startBtn:"मंडप में प्रवेश करें",
@@ -203,7 +196,6 @@
       loseTitle:"ताल थम गई…",
       loseMsg:"फिर कोशिश करें।",
       achievementUnlocked:(name)=>`🏅 उपलब्धि अनलॉक: ${name}`,
-      skinUnlocked:"✨ गोल्डन मूषक स्किन अनलॉक हुई!",
       scoreCopied:"स्कोर कॉपी हुआ!",
       couldNotCopy:"कॉपी नहीं हो सका।",
       shareUnsupported:"शेयरिंग समर्थित नहीं है।",
@@ -225,7 +217,6 @@
     document.getElementById('topBannerTitle').textContent = T('topBannerTitle');
     document.getElementById('difficultyLabel').textContent = T('difficultyLabel');
     document.getElementById('practiceLabel').textContent = T('practiceLabel');
-    document.getElementById('skinLabel').textContent = T('skinLabel');
     document.getElementById('labelNiat').textContent = T('labelNiat');
     document.getElementById('labelName').textContent = T('labelName');
     document.getElementById('labelCampus').textContent = T('labelCampus');
@@ -281,7 +272,6 @@
         if(typeof p.sfxVolume === 'number'){ sfxVolume = p.sfxVolume; sfxVolumeSlider.value = Math.round(sfxVolume*100); }
         if(typeof p.bestScore === 'number'){ bestScore = p.bestScore; }
         if(p.lang){ applyLanguage(p.lang); }
-        if(p.useGoldenSkin){ useGoldenSkin = true; }
         window.__unlockedAchievements = Array.isArray(p.achievements) ? p.achievements : [];
       } else {
         window.__unlockedAchievements = [];
@@ -289,7 +279,6 @@
     }catch(e){
       window.__unlockedAchievements = [];
     }
-    updateSkinAvailability();
     updateHUD();
   }
 
@@ -304,26 +293,11 @@
       beatVolume, sfxVolume,
       bestScore,
       lang: currentLang,
-      useGoldenSkin,
       achievements: window.__unlockedAchievements || [],
     };
     try{ await storage.set(PROFILE_KEY, JSON.stringify(profile), false); }catch(e){ /* ignore */ }
   }
 
-  function updateSkinAvailability(){
-    const unlocked = bestScore >= GOLDEN_SKIN_UNLOCK_SCORE;
-    skinSection.style.display = unlocked ? 'block' : 'none';
-    skinGoldenCheck.checked = unlocked && useGoldenSkin;
-    applySkin();
-  }
-  function applySkin(){
-    app.classList.toggle('skin-golden', useGoldenSkin && bestScore >= GOLDEN_SKIN_UNLOCK_SCORE);
-  }
-  skinGoldenCheck.addEventListener('change', ()=>{
-    useGoldenSkin = skinGoldenCheck.checked;
-    applySkin();
-    saveProfile();
-  });
 
   function unlockAchievement(id){
     window.__unlockedAchievements = window.__unlockedAchievements || [];
@@ -334,9 +308,6 @@
     const def = ACHIEVEMENTS.find(a=>a.id===id);
     if(def) showToast(T('achievementUnlocked')(def.name[currentLang]||def.name.en));
     saveProfile();
-    if(!useGoldenSkin && bestScore >= GOLDEN_SKIN_UNLOCK_SCORE){
-      updateSkinAvailability();
-    }
   }
 
   function checkGameplayAchievements(){
@@ -830,6 +801,9 @@
     return String(str).trim().replace(/[\/\\'"\s]+/g,'-').slice(0,120);
   }
 
+  // ---------------- Storage / Leaderboard ----------------
+  // The profile is local to each browser. Scores use the Vercel API so all players
+  // can see the same leaderboard after the Supabase backend is configured.
   const LOCAL_PREFIX = 'dholGanesha:';
   const localFallbackStorage = {
     async get(key, shared){
@@ -865,12 +839,7 @@
   let storageMode = null;
 
   function getStorage(){
-    if(storageMode === 'claude') return window.storage;
     if(storageMode === 'local') return localFallbackStorage;
-    if(typeof window.storage !== 'undefined' && window.storage){
-      storageMode = 'claude';
-      return window.storage;
-    }
     try{
       const testKey = '__dhol_test__';
       localStorage.setItem(testKey, '1');
@@ -883,55 +852,109 @@
     }
   }
 
-  async function saveScoreToLeaderboard(){
+  function apiUrl(path){
+    return path;
+  }
+
+  async function apiRequest(path, options={}){
+    const res = await fetch(apiUrl(path), {
+      ...options,
+      headers: { 'Content-Type':'application/json', ...(options.headers||{}) },
+      cache: 'no-store'
+    });
+    let data = null;
+    try{ data = await res.json(); }catch(e){ data = null; }
+    if(!res.ok){
+      const message = data && data.error ? data.error : `Request failed (${res.status})`;
+      throw new Error(message);
+    }
+    return data;
+  }
+
+  async function saveProfile(){
     const storage = getStorage();
-    if(!storage || !playerInfo.niatId) return;
-    const key = 'scores:'+slug(playerInfo.niatId);
-    const entry = {
-      niatId: playerInfo.niatId,
-      name: playerInfo.name,
-      campus: playerInfo.campus,
-      score: state.score,
-      combo: state.bestCombo,
-      updatedAt: Date.now()
+    if(!storage) return;
+    const profile = {
+      niatId: niatIdInput.value.trim(),
+      name: playerNameInput.value.trim(),
+      campus: campusNameInput.value.trim(),
+      difficulty: selectedDifficulty,
+      beatVolume, sfxVolume,
+      bestScore,
+      lang: currentLang,
+      achievements: window.__unlockedAchievements || [],
     };
+    try{ await storage.set(PROFILE_KEY, JSON.stringify(profile), false); }catch(e){ /* ignore */ }
+  }
+
+  async function saveScoreToLeaderboard(){
+    if(!playerInfo.niatId || !playerInfo.name || !playerInfo.campus || !state) return;
     try{
-      let existing = null;
-      try{
-        const res = await storage.get(key, true);
-        existing = res ? JSON.parse(res.value) : null;
-      }catch(e){ existing = null; }
-      if(!existing || entry.score > existing.score){
-        await storage.set(key, JSON.stringify(entry), true);
-      }
+      await apiRequest('/api/leaderboard', {
+        method:'POST',
+        body: JSON.stringify({
+          niatId: playerInfo.niatId,
+          name: playerInfo.name,
+          campus: playerInfo.campus,
+          score: Number(state.score)||0,
+          combo: Number(state.bestCombo)||0
+        })
+      });
+      return true;
     }catch(e){
       console.error('Leaderboard save failed', e);
+      showToast('Leaderboard could not save this score.');
+      return false;
     }
   }
 
   async function fetchAllLeaderboardEntries(){
-    const storage = getStorage();
-    if(!storage) return [];
-    const listRes = await storage.list('scores:', true);
-    const keys = (listRes && listRes.keys) || [];
-    const entries = [];
-    for(const k of keys){
-      try{
-        const res = await storage.get(k, true);
-        if(res && res.value) entries.push(JSON.parse(res.value));
-      }catch(e){ /* skip unreadable entry */ }
-    }
-    entries.sort((a,b)=> b.score - a.score);
-    return entries;
+    const data = await apiRequest('/api/leaderboard?scope=all');
+    return Array.isArray(data.entries) ? data.entries : [];
   }
 
   async function clearAllLeaderboardEntries(){
-    const storage = getStorage();
-    if(!storage) return;
-    const listRes = await storage.list('scores:', true);
-    const keys = (listRes && listRes.keys) || [];
-    for(const k of keys){
-      try{ await storage.delete(k, true); }catch(e){ /* ignore */ }
+    const code = window.prompt('Enter admin code to clear the leaderboard:');
+    if(code === null) return false;
+    await apiRequest('/api/leaderboard', {
+      method:'DELETE',
+      headers:{'x-admin-code':code}
+    });
+    return true;
+  }
+
+  function updateScopeNote(){
+    if(!lbScopeNote) return;
+    lbScopeNote.textContent = 'Global leaderboard • scores are shared across players.';
+  }
+
+  async function loadLeaderboard(){
+    updateScopeNote();
+    lbStatus.textContent = 'Loading leaderboard…';
+    lbStatus.style.display = 'block';
+    lbList.innerHTML='';
+    try{
+      lbCache = await fetchAllLeaderboardEntries();
+      renderLeaderboard();
+    }catch(e){
+      console.error(e);
+      lbCache = [];
+      lbStatus.textContent = 'Leaderboard is not connected yet. Configure Supabase in Vercel.';
+      lbStatus.style.display='block';
+      lbList.innerHTML='';
+      lbMeta.textContent='';
+    }
+  }
+
+  async function refreshTopBanner(){
+    try{
+      const entries = await fetchAllLeaderboardEntries();
+      if(!entries.length){ tbList.textContent = 'No scores yet — be the first!'; return; }
+      tbList.innerHTML = entries.slice(0,3).map((e,i)=>
+        '<div class="tb-row"><span class="tb-rank">'+(i+1)+'</span><span class="tb-name">'+escapeHtml(e.name||'—')+' ('+escapeHtml(e.campus||'')+')</span><span class="tb-score">'+e.score+'</span></div>'
+      ).join('');
+    }catch(e){
+      tbList.textContent = 'Leaderboard unavailable.';
     }
   }
 
@@ -971,54 +994,6 @@
 
   function escapeHtml(s){
     return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  }
-
-  function updateScopeNote(){
-    if(!lbScopeNote) return;
-    if(storageMode === 'claude'){
-      lbScopeNote.textContent = 'Shared with everyone playing this game inside Claude.';
-    } else if(storageMode === 'local'){
-      lbScopeNote.textContent = 'Saved on this device/browser only.';
-    } else {
-      lbScopeNote.textContent = '';
-    }
-  }
-
-  async function loadLeaderboard(){
-    const storage = getStorage();
-    updateScopeNote();
-    if(!storage){
-      lbStatus.textContent = 'Leaderboard storage isn\'t available in this browser.';
-      lbStatus.style.display = 'block';
-      lbList.innerHTML='';
-      lbMeta.textContent='';
-      return;
-    }
-    lbStatus.textContent = 'Loading leaderboard…';
-    lbStatus.style.display = 'block';
-    lbList.innerHTML='';
-    try{
-      lbCache = await fetchAllLeaderboardEntries();
-      renderLeaderboard();
-    }catch(e){
-      console.error(e);
-      lbStatus.textContent = 'Could not load the leaderboard right now.';
-      lbStatus.style.display='block';
-    }
-  }
-
-  async function refreshTopBanner(){
-    const storage = getStorage();
-    if(!storage){ tbList.textContent = 'Not available in this browser.'; return; }
-    try{
-      const entries = await fetchAllLeaderboardEntries();
-      if(!entries.length){ tbList.textContent = 'No scores yet — be the first!'; return; }
-      tbList.innerHTML = entries.slice(0,3).map((e,i)=>
-        '<div class="tb-row"><span class="tb-rank">'+(i+1)+'</span><span class="tb-name">'+escapeHtml(e.name||'—')+' ('+escapeHtml(e.campus||'')+')</span><span class="tb-score">'+e.score+'</span></div>'
-      ).join('');
-    }catch(e){
-      tbList.textContent = 'Could not load leaderboard.';
-    }
   }
 
   lbTabCampus.addEventListener('click', ()=>{
@@ -1075,10 +1050,17 @@
   });
   clearLeaderboardBtn.addEventListener('click', async ()=>{
     if(!window.confirm('Clear ALL leaderboard scores? This cannot be undone.')) return;
-    await clearAllLeaderboardEntries();
-    lbCache = [];
-    showToast(T('leaderboardCleared'));
-    refreshTopBanner();
+    try{
+      const cleared = await clearAllLeaderboardEntries();
+      if(!cleared) return;
+      lbCache = [];
+      showToast(T('leaderboardCleared'));
+      loadLeaderboard();
+      refreshTopBanner();
+    }catch(e){
+      console.error(e);
+      showToast('Could not clear leaderboard.');
+    }
   });
   let qrLibLoading = null;
   function loadQrLib(){
@@ -1131,7 +1113,6 @@
 
     renderBadgeShelf();
     gameOverScreen.style.display='flex';
-    updateSkinAvailability();
     saveProfile();
 
     if(!state.practice && !state.demo && bestScore === state.score && state.score>0){
