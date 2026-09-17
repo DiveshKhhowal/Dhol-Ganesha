@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Dhol Ganesha — Rhythm of the Mandap</title>
+<meta name="theme-color" content="#f3cf7a">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Mukta:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="app">
+
+  <div id="demoBanner">🧪 DEMO MODE — scores not saved</div>
+
+  <div id="garland">
+    <span>🪔</span><span>🌼</span><span>✨</span><span>🥁</span><span>✨</span><span>🌼</span><span>🪔</span><span>🥁</span><span>✨</span><span>🌼</span><span>🪔</span>
+  </div>
+
+  <div id="topBar">
+    <button id="pauseBtn" class="icon-btn" title="Pause" aria-label="Pause">⏸️</button>
+    <button id="infoBtn" class="icon-btn" title="How to play" aria-label="How to play">❔</button>
+    <button id="settingsBtn" class="icon-btn" title="Sound settings" aria-label="Sound settings">⚙️</button>
+    <button id="langBtn" class="icon-btn" title="Language" aria-label="Language">EN</button>
+    <button id="muteBtn" class="icon-btn" title="Mute" aria-label="Mute">🔊</button>
+  </div>
+
+  <div id="hud">
+    <div class="hud-block">
+      <div class="hud-label">SCORE</div>
+      <div class="hud-value" id="scoreValue">0</div>
+    </div>
+    <div class="hud-block">
+      <div class="hud-label">COMBO</div>
+      <div class="hud-value" id="combo-value">0</div>
+      <div id="comboMultiplier">×1</div>
+    </div>
+    <div class="hud-block">
+      <div class="hud-label">BEST</div>
+      <div class="hud-value" id="bestValue">0</div>
+    </div>
+  </div>
+
+  <div id="energyWrap">
+    <div id="energyLabel"><span>Mandap Devotion</span><span id="energyPct">100%</span></div>
+    <div id="energyBarOuter"><div id="energyBarInner"></div></div>
+  </div>
+
+  <div id="fireLevel">🥁</div>
+  <div id="toast"></div>
+
+  <div id="track">
+    <div id="ganeshaBg" aria-hidden="true">
+      <svg viewBox="0 0 400 420" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="gGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#fef5d8"/>
+            <stop offset="50%" stop-color="#f3cf7a"/>
+            <stop offset="100%" stop-color="#c68322"/>
+          </linearGradient>
+          <radialGradient id="highlightGrad" cx="35%" cy="30%" r="60%">
+            <stop offset="0%" stop-color="#ffffff" stop-opacity="0.6"/>
+            <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+          </radialGradient>
+        </defs>
+        <g id="garlandRing" opacity="0.85">
+          <circle cx="365" cy="205" r="10" class="ring-c1"/>
+          <circle cx="342.9" cy="287.5" r="10" class="ring-c2"/>
+          <circle cx="282.5" cy="347.9" r="10" class="ring-c3"/>
+          <circle cx="200" cy="370" r="10" class="ring-c1"/>
+          <circle cx="117.5" cy="347.9" r="10" class="ring-c2"/>
+          <circle cx="57.1" cy="287.5" r="10" class="ring-c3"/>
+          <circle cx="35" cy="205" r="10" class="ring-c1"/>
+          <circle cx="57.1" cy="122.5" r="10" class="ring-c2"/>
+          <circle cx="117.5" cy="62.1" r="10" class="ring-c3"/>
+          <circle cx="200" cy="40" r="10" class="ring-c1"/>
+          <circle cx="282.5" cy="62.1" r="10" class="ring-c2"/>
+          <circle cx="342.9" cy="122.5" r="10" class="ring-c3"/>
+        </g>
+        <ellipse cx="88" cy="185" rx="72" ry="92" fill="url(#gGrad)" transform="rotate(-18 88 185)"/>
+        <ellipse cx="312" cy="185" rx="72" ry="92" fill="url(#gGrad)" transform="rotate(18 312 185)"/>
+        <ellipse cx="200" cy="205" rx="112" ry="102" fill="url(#gGrad)"/>
+        <ellipse cx="200" cy="205" rx="112" ry="102" fill="url(#highlightGrad)"/>
+        <path d="M138 118 L155 62 L200 104 L245 62 L262 118 Q200 96 138 118 Z" fill="url(#gGrad)"/>
+        <circle cx="200" cy="58" r="14" fill="url(#gGrad)"/>
+        <circle cx="200" cy="168" r="9" fill="#d95d39"/>
+        <path d="M232 220 Q248 232 238 250" stroke="#fbf7ee" stroke-width="7" fill="none" stroke-linecap="round" opacity="0.9"/>
+        <path d="M196 270 Q160 320 190 355 Q214 380 190 402" stroke="url(#gGrad)" stroke-width="36" fill="none" stroke-linecap="round"/>
+        <circle cx="188" cy="404" r="13" fill="#7a9a60" opacity="0.9"/>
+      </svg>
+    </div>
+    <div class="lane left"><div class="lane-glow"></div><div class="hitline"></div><div class="target">←</div></div>
+    <div class="lane up"><div class="lane-glow"></div><div class="hitline"></div><div class="target">↑</div></div>
+    <div class="lane right"><div class="lane-glow"></div><div class="hitline"></div><div class="target">→</div></div>
+    <div class="lane down"><div class="lane-glow"></div><div class="hitline"></div><div class="target">↓</div></div>
+    <div id="mascotWrap">🐭</div>
+  </div>
+
+  <!-- Start Screen -->
+  <div class="overlay" id="startScreen">
+    <button id="aboutBtn" class="icon-btn corner-btn" title="About this game" aria-label="About this game">ℹ️</button>
+    <h1 id="gameTitle">✨ Dhol Ganesha</h1>
+    <p id="introText">The mandap celebration begins! Hit the keys in rhythm with the dhol to bring light and music to the mandap.</p>
+    <div class="keys-demo">
+      <div class="k1">←</div><div class="k2">↑</div><div class="k3">→</div><div class="k4">↓</div>
+    </div>
+    <p id="introSubText" style="font-size:13px;opacity:.7;">Press the matching key as the note reaches the arch. Keep the rhythm going for maximum combo points and survive 2 minutes!</p>
+
+    <div id="topBanner">
+      <div class="tb-title" id="topBannerTitle">🏆 Today's Top 3</div>
+      <div id="tbList" class="tb-list">Loading…</div>
+    </div>
+
+    <div id="difficultySection">
+      <div class="section-label" id="difficultyLabel">Difficulty</div>
+      <div class="diff-tabs">
+        <button class="diff-tab" data-diff="easy" type="button">Easy</button>
+        <button class="diff-tab active" data-diff="medium" type="button">Medium</button>
+        <button class="diff-tab" data-diff="hard" type="button">Hard</button>
+      </div>
+      <label id="practiceToggle">
+        <input type="checkbox" id="practiceCheck">
+        <span id="practiceLabel">Practice Mode (no game over, score not saved)</span>
+      </label>
+      <div id="skinSection" style="display:none;">
+        <label id="skinToggle">
+          <input type="checkbox" id="skinGoldenCheck">
+          <span id="skinLabel">✨ Use Golden Mushak skin (unlocked!)</span>
+        </label>
+      </div>
+    </div>
+
+    <div id="playerForm">
+      <div class="field">
+        <label for="niatId" id="labelNiat">NIAT ID</label>
+        <input type="text" id="niatId" placeholder="e.g. NT2024xxxx" autocomplete="off" maxlength="40">
+      </div>
+      <div class="field">
+        <label for="playerName" id="labelName">Player Name</label>
+        <input type="text" id="playerName" placeholder="Your name" autocomplete="off" maxlength="40">
+      </div>
+      <div class="field">
+        <label for="campusName" id="labelCampus">Campus Name</label>
+        <select id="campusName" autocomplete="off">
+          <option value="" selected disabled>Select your campus</option>
+          <option value="Yenepoya Mangalore Campus, KA">Yenepoya Mangalore Campus, KA</option>
+          <option value="Yenepoya Bangalore Campus, KA">Yenepoya Bangalore Campus, KA</option>
+          <option value="S-VYASA (Deemed to be University), KA">S-VYASA (Deemed to be University), KA</option>
+          <option value="St. Peter’s Institute of Higher Education and Research, KA">St. Peter’s Institute of Higher Education and Research, KA</option>
+          <option value="GMRIT, AP">GMRIT, AP</option>
+          <option value="NRI, AP">NRI, AP</option>
+          <option value="Annamacharya University, AP">Annamacharya University, AP</option>
+          <option value="NSRIT, AP">NSRIT, AP</option>
+          <option value="Lingayas Institute of Management and Technology (LIMAT), AP">Lingayas Institute of Management and Technology (LIMAT), AP</option>
+          <option value="Bharatiya Engineering Science and Technology Innovation University, AP">Bharatiya Engineering Science and Technology Innovation University, AP</option>
+          <option value="MR Deemed to be University, AP">MR Deemed to be University, AP</option>
+          <option value="Chalapathi (CITY), AP">Chalapathi (CITY), AP</option>
+          <option value="Visakha Institute of Engineering &amp; Technology, AP">Visakha Institute of Engineering &amp; Technology, AP</option>
+          <option value="MVR College of Engineering &amp; Technology, AP">MVR College of Engineering &amp; Technology, AP</option>
+          <option value="Geeta University, HR">Geeta University, HR</option>
+          <option value="Sushant University, HR">Sushant University, HR</option>
+          <option value="Lingaya’s Vidyapeeth, HR">Lingaya’s Vidyapeeth, HR</option>
+          <option value="Vivekananda Global University, RJ">Vivekananda Global University, RJ</option>
+          <option value="Scope Global Skills University, MP">Scope Global Skills University, MP</option>
+          <option value="Sri Sri University, OD">Sri Sri University, OD</option>
+          <option value="Subharti University, UP">Subharti University, UP</option>
+          <option value="Sanskriti University, UP">Sanskriti University, UP</option>
+          <option value="Noida International University, UP">Noida International University, UP</option>
+          <option value="T. S. Mishra University, UP">T. S. Mishra University, UP</option>
+          <option value="Crescent University, TN">Crescent University, TN</option>
+          <option value="St. Peter’s Institute of Higher Education and Research, TN">St. Peter’s Institute of Higher Education and Research, TN</option>
+          <option value="AMET University (Chennai), TN">AMET University (Chennai), TN</option>
+          <option value="Joy University, TN">Joy University, TN</option>
+          <option value="SNS College of Technology, TN">SNS College of Technology, TN</option>
+          <option value="PK Das Deemed to be University, TN">PK Das Deemed to be University, TN</option>
+          <option value="Bharath Institute of Higher Education and Research Deemed to be University, TN">Bharath Institute of Higher Education and Research Deemed to be University, TN</option>
+          <option value="Takshila University, TN">Takshila University, TN</option>
+          <option value="Malla Reddy University, TG">Malla Reddy University, TG</option>
+          <option value="SMR University, TG">SMR University, TG</option>
+          <option value="Chaitanya University, TG">Chaitanya University, TG</option>
+          <option value="Aurora University, TG">Aurora University, TG</option>
+          <option value="KKH, TG">KKH, TG</option>
+          <option value="MRV, TG">MRV, TG</option>
+          <option value="Sandip University, MH">Sandip University, MH</option>
+          <option value="Alard University, MH">Alard University, MH</option>
+          <option value="Ajeenkya DY Patil University, MH">Ajeenkya DY Patil University, MH</option>
+          <option value="Sanjay Ghodawat University, MH">Sanjay Ghodawat University, MH</option>
+        </select>
+      </div>
+      <div id="formError">Please fill in all three fields to begin.</div>
+    </div>
+
+    <button class="cta" id="startBtn">Enter the Mandap</button>
+  </div>
+
+  <!-- Pause Overlay -->
+  <div class="overlay" id="pauseScreen" style="display:none;">
+    <h1 id="pauseTitle">⏸️ Paused</h1>
+    <p id="pauseText">Take a moment — the mandap rhythms will wait for you.</p>
+    <button class="cta" id="resumeBtn">Resume</button>
+  </div>
+
+  <!-- How to Play Overlay -->
+  <div class="overlay" id="infoScreen" style="display:none;">
+    <h1 id="infoTitle">How to Play</h1>
+    <ul class="howto-list" id="howtoList">
+      <li>←/↑/→/↓ — press the matching key as the note reaches the arch (or tap the arch on mobile).</li>
+      <li>Perfect timing scores more than a Good hit.</li>
+      <li>Chain hits to build combo — every 10 combo raises your multiplier, up to ×5.</li>
+      <li>15 perfect hits in a row triggers a bonus celebration.</li>
+      <li>Missing a beat drains devotion energy — if it empties, the round ends.</li>
+      <li>Survive 2 minutes to complete the ritual and win!</li>
+    </ul>
+    <button class="cta" id="closeInfoBtn">Got it</button>
+  </div>
+
+  <!-- About Overlay -->
+  <div class="overlay" id="aboutScreen" style="display:none;">
+    <h1 id="aboutTitle">About Dhol Ganesha</h1>
+    <p id="aboutText1">A rhythm game set in a golden mandap — hit dhol beats in time, build combos, and climb the leaderboard.</p>
+    <p id="aboutText2" style="font-size:13px;opacity:.75;">Built with HTML, CSS &amp; JavaScript. Audio synthesizes live via the Web Audio API without heavy audio downloads.</p>
+    <button class="cta" id="closeAboutBtn">Close</button>
+  </div>
+
+  <!-- Sound Settings Overlay -->
+  <div class="overlay" id="settingsScreen" style="display:none;">
+    <h1 id="settingsTitle">Sound Settings</h1>
+    <div class="slider-row">
+      <label for="beatVolumeSlider" id="beatVolumeLabel">Dhol Beat Volume</label>
+      <input type="range" id="beatVolumeSlider" min="0" max="100" value="90">
+    </div>
+    <div class="slider-row">
+      <label for="sfxVolumeSlider" id="sfxVolumeLabel">Effects Volume</label>
+      <input type="range" id="sfxVolumeSlider" min="0" max="100" value="80">
+    </div>
+    <button class="cta" id="closeSettingsBtn">Done</button>
+  </div>
+
+  <!-- Admin Overlay -->
+  <div class="overlay" id="adminScreen" style="display:none;">
+    <h1>🛠️ Admin Panel</h1>
+    <p style="font-size:12px;opacity:.7;">Judge-day tools.</p>
+    <label id="demoModeToggle" class="admin-check">
+      <input type="checkbox" id="demoModeCheck">
+      <span>Demo Mode (runs won't be saved)</span>
+    </label>
+    <button class="cta secondary" id="clearLeaderboardBtn">🗑️ Clear Leaderboard</button>
+    <div id="qrSection">
+      <label for="qrUrlInput" style="font-size:12px;opacity:.8;">Game URL</label>
+      <input type="text" id="qrUrlInput" placeholder="https://your-hosted-game-url">
+      <button class="cta secondary" id="generateQrBtn">Generate QR Code</button>
+      <div id="qrContainer"></div>
+    </div>
+    <button class="cta" id="closeAdminBtn">Close</button>
+  </div>
+
+  <!-- Game Over -->
+  <div class="overlay" id="gameOverScreen" style="display:none;">
+    <h1 id="gameOverTitle">The Beat Fades…</h1>
+    <p id="gameOverMsg">The energy waned, but the mandap remains full of spirit!</p>
+    <div id="stats-row">
+      <div class="stat"><b id="finalScore">0</b><span id="statScoreLabel">Score</span></div>
+      <div class="stat"><b id="finalCombo">0</b><span id="statComboLabel">Best Combo</span></div>
+      <div class="stat"><b id="finalAccuracy">0%</b><span id="statAccLabel">Accuracy</span></div>
+    </div>
+
+    <div id="badgeShelf"></div>
+
+    <button class="cta secondary" id="shareBtn">📤 Share My Score</button>
+
+    <div id="leaderboardSection">
+      <div class="lb-tabs">
+        <button class="lb-tab active" id="lbTabCampus" type="button">My Campus</button>
+        <button class="lb-tab" id="lbTabAll" type="button">All Campuses</button>
+      </div>
+      <div id="lbMeta"></div>
+      <div id="lbStatus">Loading leaderboard…</div>
+      <div id="lbList"></div>
+      <div id="lbScopeNote"></div>
+    </div>
+
+    <button class="cta" id="retryBtn">Try Again</button>
+    <button class="cta secondary" id="homeBtn">🏠 Home</button>
+  </div>
+
+  <!-- Celebration -->
+  <div class="overlay" id="celebrate">
+    <div class="banner">🎉 Ganpati Bappa Morya! 🎉</div>
+    <p>Flawless rhythm! The mandap shines with golden energy.</p>
+  </div>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
