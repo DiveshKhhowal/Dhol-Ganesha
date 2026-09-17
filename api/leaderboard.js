@@ -1,78 +1,95 @@
-// Dhol Ganesha - Global Leaderboard API
+// Dhol Ganesha Global Leaderboard
 // Vercel Serverless Function + Supabase
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-function json(res, status, data) {
+// IMPORTANT:
+// This must match the table you created in Supabase.
+const TABLE = "dhol_leaderboard";
+
+function send(res, status, data) {
   res.status(status).json(data);
 }
 
-function validString(value, maxLength) {
-  return typeof value === "string" &&
+function validText(value, maxLength) {
+  return (
+    typeof value === "string" &&
     value.trim().length > 0 &&
-    value.length <= maxLength;
+    value.length <= maxLength
+  );
+}
+
+async function supabaseFetch(path, options = {}) {
+  return fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    ...options,
+    headers: {
+      apikey: SUPABASE_KEY,
+      Authorization: `Bearer ${SUPABASE_KEY}`,
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    }
+  });
 }
 
 export default async function handler(req, res) {
+
+  // Check environment variables
   if (!SUPABASE_URL || !SUPABASE_KEY) {
-    return json(res, 500, {
-      error: "Supabase environment variables are not configured."
+    return send(res, 500, {
+      error: "Supabase environment variables are missing."
     });
   }
 
-  // ---------------- GET LEADERBOARD ----------------
+  // =====================================================
+  // GET - LOAD LEADERBOARD
+  // =====================================================
+
   if (req.method === "GET") {
     try {
-      const campus = req.query?.campus;
+      const response = await supabaseFetch(
+        `${TABLE}?select=niat_id,name,campus,score,combo,updated_at&order=score.desc&limit=100`
+      );
 
-      let url =
-        `${SUPABASE_URL}/rest/v1/leaderboard` +
-        `?select=niat_id,name,campus,score,combo,updated_at` +
-        `&order=score.desc` +
-        `&limit=100`;
-
-      if (campus) {
-        url += `&campus=eq.${encodeURIComponent(campus)}`;
-      }
-
-      const response = await fetch(url, {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`
-        }
-      });
-
-      const data = await response.json();
+      const text = await response.text();
 
       if (!response.ok) {
-        console.error("Supabase GET error:", data);
-        return json(res, 500, {
+        console.error("Supabase GET error:", text);
+
+        return send(res, 500, {
           error: "Could not load leaderboard."
         });
       }
 
-      const entries = data.map(row => ({
+      const rows = JSON.parse(text);
+
+      const entries = rows.map(row => ({
         niatId: row.niat_id,
         name: row.name,
         campus: row.campus,
-        score: row.score,
-        combo: row.combo || 0,
+        score: Number(row.score) || 0,
+        combo: Number(row.combo) || 0,
         updatedAt: row.updated_at
       }));
 
-      return json(res, 200, entries);
+      // Your script.js expects { entries: [...] }
+      return send(res, 200, {
+        entries
+      });
 
     } catch (error) {
-      console.error("Leaderboard GET failed:", error);
+      console.error("GET leaderboard error:", error);
 
-      return json(res, 500, {
-        error: "Could not load leaderboard."
+      return send(res, 500, {
+        error: "Leaderboard unavailable."
       });
     }
   }
 
-  // ---------------- SAVE SCORE ----------------
+  // =====================================================
+  // POST - SAVE SCORE
+  // =====================================================
+
   if (req.method === "POST") {
     try {
       const body = req.body || {};
@@ -84,24 +101,34 @@ export default async function handler(req, res) {
       const score = Number(body.score);
       const combo = Number(body.combo || 0);
 
-      if (!validString(niatId, 100)) {
-        return json(res, 400, { error: "Invalid NIAT ID." });
+      // Validate player information
+      if (!validText(niatId, 100)) {
+        return send(res, 400, {
+          error: "Invalid NIAT ID."
+        });
       }
 
-      if (!validString(name, 100)) {
-        return json(res, 400, { error: "Invalid name." });
+      if (!validText(name, 100)) {
+        return send(res, 400, {
+          error: "Invalid player name."
+        });
       }
 
-      if (!validString(campus, 200)) {
-        return json(res, 400, { error: "Invalid campus." });
+      if (!validText(campus, 200)) {
+        return send(res, 400, {
+          error: "Invalid campus."
+        });
       }
 
+      // Validate score
       if (
         !Number.isFinite(score) ||
         score < 0 ||
         score > 1000000
       ) {
-        return json(res, 400, { error: "Invalid score." });
+        return send(res, 400, {
+          error: "Invalid score."
+        });
       }
 
       if (
@@ -109,53 +136,51 @@ export default async function handler(req, res) {
         combo < 0 ||
         combo > 100000
       ) {
-        return json(res, 400, { error: "Invalid combo." });
+        return send(res, 400, {
+          error: "Invalid combo."
+        });
       }
 
-      // Check existing best score
-      const lookupUrl =
-        `${SUPABASE_URL}/rest/v1/leaderboard` +
-        `?select=score` +
-        `&niat_id=eq.${encodeURIComponent(niatId)}` +
-        `&limit=1`;
+      // =================================================
+      // Check player's existing best score
+      // =================================================
 
-      const lookupResponse = await fetch(lookupUrl, {
-        headers: {
-          apikey: SUPABASE_KEY,
-          Authorization: `Bearer ${SUPABASE_KEY}`
-        }
-      });
+      const lookupResponse = await supabaseFetch(
+        `${TABLE}?select=score&niat_id=eq.${encodeURIComponent(niatId)}&limit=1`
+      );
+
+      const lookupText = await lookupResponse.text();
 
       if (!lookupResponse.ok) {
-        console.error(
-          "Supabase lookup error:",
-          await lookupResponse.text()
-        );
+        console.error("Supabase lookup error:", lookupText);
 
-        return json(res, 500, {
+        return send(res, 500, {
           error: "Could not check existing score."
         });
       }
 
-      const existing = await lookupResponse.json();
+      const existingRows = JSON.parse(lookupText);
 
-      // Don't replace a player's higher score
-      if (existing.length > 0 && score <= Number(existing[0].score)) {
-        return json(res, 200, {
+      // If existing score is higher/equal, don't replace it
+      if (
+        existingRows.length > 0 &&
+        Number(existingRows[0].score) >= score
+      ) {
+        return send(res, 200, {
           saved: false,
           message: "Existing score is higher or equal."
         });
       }
 
-      // Insert/update best score
-      const saveResponse = await fetch(
-        `${SUPABASE_URL}/rest/v1/leaderboard?on_conflict=niat_id`,
+      // =================================================
+      // Insert / Update best score
+      // =================================================
+
+      const saveResponse = await supabaseFetch(
+        `${TABLE}?on_conflict=niat_id`,
         {
           method: "POST",
           headers: {
-            apikey: SUPABASE_KEY,
-            Authorization: `Bearer ${SUPABASE_KEY}`,
-            "Content-Type": "application/json",
             Prefer: "resolution=merge-duplicates,return=minimal"
           },
           body: JSON.stringify({
@@ -169,34 +194,90 @@ export default async function handler(req, res) {
         }
       );
 
-      if (!saveResponse.ok) {
-        console.error(
-          "Supabase save error:",
-          await saveResponse.text()
-        );
+      const saveText = await saveResponse.text();
 
-        return json(res, 500, {
+      if (!saveResponse.ok) {
+        console.error("Supabase save error:", saveText);
+
+        return send(res, 500, {
           error: "Could not save score."
         });
       }
 
-      return json(res, 200, {
+      return send(res, 200, {
         saved: true
       });
 
     } catch (error) {
-      console.error("Leaderboard POST failed:", error);
+      console.error("POST leaderboard error:", error);
 
-      return json(res, 500, {
+      return send(res, 500, {
         error: "Could not save score."
       });
     }
   }
 
-  // ---------------- OTHER METHODS ----------------
-  res.setHeader("Allow", "GET, POST");
+  // =====================================================
+  // DELETE - ADMIN CLEAR
+  // =====================================================
 
-  return json(res, 405, {
+  if (req.method === "DELETE") {
+
+    // Use a separate Vercel environment variable.
+    // Never put an admin secret inside JavaScript.
+    const adminCode = process.env.ADMIN_CODE;
+
+    if (!adminCode) {
+      return send(res, 403, {
+        error: "Admin clearing is not configured."
+      });
+    }
+
+    const suppliedCode = req.headers["x-admin-code"];
+
+    if (!suppliedCode || suppliedCode !== adminCode) {
+      return send(res, 403, {
+        error: "Invalid admin code."
+      });
+    }
+
+    try {
+      const response = await supabaseFetch(
+        `${TABLE}?niat_id=not.is.null`,
+        {
+          method: "DELETE",
+          headers: {
+            Prefer: "return=minimal"
+          }
+        }
+      );
+
+      const text = await response.text();
+
+      if (!response.ok) {
+        console.error("Supabase DELETE error:", text);
+
+        return send(res, 500, {
+          error: "Could not clear leaderboard."
+        });
+      }
+
+      return send(res, 200, {
+        cleared: true
+      });
+
+    } catch (error) {
+      console.error("DELETE leaderboard error:", error);
+
+      return send(res, 500, {
+        error: "Could not clear leaderboard."
+      });
+    }
+  }
+
+  res.setHeader("Allow", "GET, POST, DELETE");
+
+  return send(res, 405, {
     error: "Method not allowed."
   });
 }
